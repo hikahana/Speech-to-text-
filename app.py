@@ -108,6 +108,57 @@ def transcribe_with_whisper(audio_file):
         else:
             raise Exception(f"Whisper API エラー: {response.status_code} - {response.text}")
 
+def improve_japanese_text(text):
+    """GPT APIを使用して日本語テキストを改善"""
+    api_key = os.environ.get('OPENAI_API_KEY')
+    if not api_key:
+        raise Exception("OPENAI_API_KEYが設定されていません")
+
+    url = "https://api.openai.com/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    prompt = f"""
+以下の音声文字起こしの結果を自然な日本語に修正してください。
+句読点を適切に配置し、敬語を統一し、聞き取れなかった部分を文脈から推測して補完してください。
+元の意味を保持しながら、読みやすい文章にしてください。
+
+文字起こし結果:
+{text}
+
+修正された日本語:
+"""
+
+    data = {
+        "model": "gpt-3.5-turbo",
+        "messages": [
+            {
+                "role": "system",
+                "content": "あなたは日本語の文章校正の専門家です。音声文字起こしの結果を自然で読みやすい日本語に修正してください。"
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "max_tokens": 2000,
+        "temperature": 0.3
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code == 200:
+            result = response.json()
+            return result['choices'][0]['message']['content'].strip()
+        else:
+            raise Exception(f"GPT API エラー: {response.status_code} - {response.text}")
+    except Exception as e:
+        # GPT APIが失敗した場合は元のテキストを返す
+        print(f"日本語改善エラー: {e}")
+        return text
+
 def cleanup_uploads():
     """uploadsディレクトリの古いファイルをクリーンアップ"""
     try:
@@ -159,6 +210,7 @@ def process_file():
     try:
         data = request.get_json()
         filename = data.get('filename')
+        improve_text = data.get('improve_text', True)  # デフォルトで改善を有効
 
         if not filename:
             return jsonify({'error': 'ファイル名が指定されていません'}), 400
@@ -184,11 +236,32 @@ def process_file():
 
             # Whisper APIで文字起こし
             transcript = transcribe_with_whisper(fixed_part)
-            transcript_parts.append({
-                'part': i + 1,
-                'duration_start': i * SEGMENT_DURATION,
-                'text': transcript.strip()
-            })
+
+            # 日本語改善が有効な場合
+            if improve_text:
+                try:
+                    improved_transcript = improve_japanese_text(transcript.strip())
+                    transcript_parts.append({
+                        'part': i + 1,
+                        'duration_start': i * SEGMENT_DURATION,
+                        'original_text': transcript.strip(),
+                        'improved_text': improved_transcript
+                    })
+                except Exception as e:
+                    print(f"パート{i+1}の日本語改善エラー: {e}")
+                    transcript_parts.append({
+                        'part': i + 1,
+                        'duration_start': i * SEGMENT_DURATION,
+                        'original_text': transcript.strip(),
+                        'improved_text': transcript.strip()
+                    })
+            else:
+                transcript_parts.append({
+                    'part': i + 1,
+                    'duration_start': i * SEGMENT_DURATION,
+                    'original_text': transcript.strip(),
+                    'improved_text': transcript.strip()
+                })
 
         # 結果テキストを生成（一意性を保つためタイムスタンプを含む）
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -197,12 +270,21 @@ def process_file():
 
         # 結果テキストを構築
         result_content = f"=== {original_filename} の文字起こし結果 ===\n"
-        result_content += f"処理日時: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+        result_content += f"処理日時: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+        result_content += f"日本語改善: {'有効' if improve_text else '無効'}\n\n"
 
         for part in transcript_parts:
             start_min = part['duration_start'] // 60
             result_content += f"=== パート{part['part']} ({start_min}分頃から) ===\n"
-            result_content += part['text']
+
+            if improve_text and part['original_text'] != part['improved_text']:
+                result_content += "【改善前】\n"
+                result_content += part['original_text']
+                result_content += "\n\n【改善後】\n"
+                result_content += part['improved_text']
+            else:
+                result_content += part['improved_text']
+
             result_content += "\n\n"
 
         # 一時ファイルを削除
@@ -219,7 +301,8 @@ def process_file():
             'result_filename': result_filename,
             'result_content': result_content,
             'parts_count': len(transcript_parts),
-            'message': '文字起こしが完了しました'
+            'improve_text': improve_text,
+            'message': '文字起こしと日本語改善が完了しました' if improve_text else '文字起こしが完了しました'
         })
 
     except Exception as e:

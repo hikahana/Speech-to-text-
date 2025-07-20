@@ -39,9 +39,27 @@
           <div id="file-info" class="file-info" style="display: none"></div>
         </section>
 
+        <!-- 処理設定セクション -->
+        <section class="settings-section">
+          <h2>⚙️ 処理設定</h2>
+          <div class="settings-container">
+            <div class="setting-item">
+              <label for="improve-text" class="setting-label">
+                <input type="checkbox" id="improve-text" checked />
+                <span class="checkmark"></span>
+                日本語改善を有効にする
+              </label>
+              <p class="setting-description">
+                GPT APIを使用して文字起こし結果を自然な日本語に修正します。
+                句読点の配置、敬語の統一、聞き取れなかった部分の補完を行います。
+              </p>
+            </div>
+          </div>
+        </section>
+
         <!-- 処理実行セクション -->
         <section class="process-section">
-          <h2>⚙️ 処理実行</h2>
+          <h2>🚀 処理実行</h2>
           <button id="process-btn" class="process-btn" disabled>
             文字起こしを開始
           </button>
@@ -54,11 +72,11 @@
           </div>
         </section>
 
-                    <!-- 結果セクション -->
-            <section class="results-section">
-                <h2>📄 結果</h2>
-                <div id="results" class="results"></div>
-            </section>
+        <!-- 結果セクション -->
+        <section class="results-section">
+          <h2>📄 結果</h2>
+          <div id="results" class="results"></div>
+        </section>
       </main>
 
       <!-- アラート表示 -->

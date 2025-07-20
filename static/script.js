@@ -8,6 +8,7 @@ const progress = document.getElementById("progress");
 const results = document.getElementById("results");
 const resultsList = document.getElementById("results-list");
 const alert = document.getElementById("alert");
+const improveTextCheckbox = document.getElementById("improve-text");
 
 // グローバル変数
 let uploadedFileName = null;
@@ -136,8 +137,10 @@ async function startProcessing() {
       progressText.textContent = "音声ファイルを分割中...";
     } else if (currentProgress < 60) {
       progressText.textContent = "タイムスタンプを修正中...";
-    } else if (currentProgress < 90) {
+    } else if (currentProgress < 80) {
       progressText.textContent = "Whisper APIで文字起こし中...";
+    } else if (currentProgress < 90) {
+      progressText.textContent = "日本語改善中...";
     } else {
       progressText.textContent = "結果を保存中...";
     }
@@ -151,6 +154,7 @@ async function startProcessing() {
       },
       body: JSON.stringify({
         filename: uploadedFileName,
+        improve_text: improveTextCheckbox.checked,
       }),
     });
 
@@ -184,6 +188,9 @@ async function startProcessing() {
 
 // 結果表示（成功）
 function displayResult(result) {
+  const improveStatus = result.improve_text ? "有効" : "無効";
+  const improveIcon = result.improve_text ? "✨" : "📝";
+
   results.innerHTML = `
         <div class="result-success">
             <h4>✅ 文字起こし完了</h4>
@@ -192,6 +199,7 @@ function displayResult(result) {
             <p><strong>処理時間:</strong> 約${
               result.parts_count * 35
             }分の音声</p>
+            <p><strong>日本語改善:</strong> ${improveIcon} ${improveStatus}</p>
             <button onclick="downloadResult('${
               result.result_filename
             }', \`${result.result_content.replace(
