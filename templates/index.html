@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Whisper API 文字起こしサービス</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>🎤 Whisper API 文字起こしサービス</h1>
+        <p>
+          音声ファイル（.m4a, .mp4, .wav,
+          .mp3）を選択して、文字起こしを実行できます
+        </p>
+      </header>
+
+      <main>
+        <!-- ファイルアップロードセクション -->
+        <section class="upload-section">
+          <h2>📁 ファイルアップロード</h2>
+          <div class="upload-area" id="upload-area">
+            <input
+              type="file"
+              id="file-input"
+              accept=".m4a,.mp4,.wav,.mp3"
+              hidden
+            />
+            <div class="upload-content">
+              <div class="upload-icon">📎</div>
+              <p>ファイルをドラッグ&ドロップまたはクリックして選択</p>
+              <button type="button" id="select-btn">ファイルを選択</button>
+            </div>
+          </div>
+          <div id="file-info" class="file-info" style="display: none"></div>
+        </section>
+
+        <!-- 処理実行セクション -->
+        <section class="process-section">
+          <h2>⚙️ 処理実行</h2>
+          <button id="process-btn" class="process-btn" disabled>
+            文字起こしを開始
+          </button>
+          <div id="progress" class="progress" style="display: none">
+            <div class="progress-container">
+              <div class="progress-spinner"></div>
+              <div class="progress-percentage">0%</div>
+              <div class="progress-text">処理中...</div>
+            </div>
+          </div>
+        </section>
+
+                    <!-- 結果セクション -->
+            <section class="results-section">
+                <h2>📄 結果</h2>
+                <div id="results" class="results"></div>
+            </section>
+      </main>
+
+      <!-- アラート表示 -->
+      <div id="alert" class="alert" style="display: none"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </body>
+</html>
